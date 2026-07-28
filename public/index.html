@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>HoMix · 本地自动剪辑工作台</title>
+  <link rel="icon" href="/icon.svg?v=0.20.5" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css?v=0.20.5">
+</head>
+<body>
+  <div class="mac-titlebar-drag" aria-hidden="true"></div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand" aria-label="HoMix"><strong>HoMix</strong></div>
+
+      <nav class="nav-list" aria-label="主导航">
+        <button class="nav-item active" data-view="studio">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v11H4zM8 4v2.5M16 4v2.5M8 17.5V20M16 17.5V20M4 10h16"/></svg></span><span>自动剪辑工作台</span>
+        </button>
+        <button class="nav-item" id="openProjects">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5h6l1.7 2H20.5v10H3.5z"/></svg></span><span>本地项目</span><span class="nav-badge" id="projectCount">0</span>
+        </button>
+        <button class="nav-item" id="openLibrary">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.8 2.5 5.1 5.7.8-4.1 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4.1-4 5.7-.8z"/></svg></span><span>星标素材库</span><span class="nav-badge" id="libraryCount">0</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-spacer"></div>
+      <section class="local-card">
+        <div class="local-card-title"><span class="pulse-dot"></span>本地处理</div>
+        <p>素材不会离开电脑</p>
+        <div class="status-line"><span>FFmpeg</span><b id="ffmpegState">检测中</b></div>
+        <div class="status-line"><span>本地 AI</span><b id="ollamaState">未连接</b></div>
+      </section>
+      <button class="nav-item subtle" id="helpButton"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.5 2.5 0 0 1 4.8 1c0 1.8-2.5 2.1-2.5 3.8M12 17.5h.01"/></svg></span><span>使用说明</span></button>
+      <div class="version">HoMix v0.20.5</div>
+    </aside>
+
+    <main class="main-stage">
+      <header class="topbar">
+        <div class="topbar-leading">
+          <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="收起侧边栏" aria-expanded="true" title="收起侧边栏">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="3"/><path d="M9 4v16"/></svg>
+          </button>
+          <div>
+            <div class="eyebrow">本地视频工作台</div>
+            <h1 id="pageTitle">自动剪辑工作流</h1>
+          </div>
+        </div>
+        <div class="top-actions">
+          <span class="privacy-chip"><span>●</span> 仅本机运行</span>
+          <button class="button ghost" id="openProjectsTop">本地项目 <span id="projectCountTop">0</span></button>
+          <button class="button ghost" id="aiSettingsButton">识别设置</button>
+          <button class="button ghost" id="newProject">新建项目</button>
+          <button class="avatar" title="无需登录">本地</button>
+        </div>
+      </header>
+
+      <div class="workspace" id="workspace">
+        <section class="workflow-bar">
+          <button class="workflow-step active" id="stepBroll" data-workflow-page="scene"><i>1</i><span>素材准备与项目设置</span></button>
+          <div class="workflow-line"></div>
+          <button class="workflow-step" id="stepHook" data-workflow-page="extract"><i>2</i><span>钩子识别与切点确认</span></button>
+          <div class="workflow-line"></div>
+          <button class="workflow-step" id="stepCompose" data-workflow-page="compose"><i>3</i><span>成片编排与导出</span></button>
+        </section>
+
+        <section class="intake-workbench" id="intakeWorkbench">
+          <div class="intake-columns">
+            <div class="queue-column">
+              <section class="import-panel queue-panel" id="importPanel">
+                <div class="queue-actions">
+                  <div class="content-inline-options" aria-label="项目内容">
+                    <label title="使用混剪素材"><input type="checkbox" data-content-toggle="broll" checked><span>素材</span></label>
+                    <label title="使用钩子"><input type="checkbox" data-content-toggle="hooks" checked><span>钩子</span></label>
+                    <label title="使用独立音乐"><input type="checkbox" data-content-toggle="music"><span>音乐</span></label>
+                  </div>
+                  <button class="button primary" id="pickFiles">＋ 添加视频</button>
+                  <button class="button ghost" id="pickFolder">添加文件夹</button>
+                  <button class="button ghost" id="enterPath">输入路径</button>
+                </div>
+                <div class="queue-table-head"><span>ID</span><span>文件名</span><span>文件路径</span><span>状态</span></div>
+                <div class="queue-empty">
+                  <div class="queue-empty-icon">▰</div>
+                  <strong>添加视频开始创建镜头库</strong>
+                  <p>点击上方按钮，或把视频路径粘贴到这里</p>
+                </div>
+                <div class="queue-summary"><span>视频数：<b>0</b></span><span>等待分析</span><span>素材仅在本机处理</span></div>
+              </section>
+
+              <section class="source-panel queue-panel hidden" id="sourcePanel">
+                <div class="queue-actions">
+                  <div class="content-inline-options" aria-label="项目内容">
+                    <label title="使用混剪素材"><input type="checkbox" data-content-toggle="broll" checked><span>素材</span></label>
+                    <label title="使用钩子"><input type="checkbox" data-content-toggle="hooks" checked><span>钩子</span></label>
+                    <label title="使用独立音乐"><input type="checkbox" data-content-toggle="music"><span>音乐</span></label>
+                  </div>
+                  <button class="button primary" id="addMore">＋ 添加视频</button>
+                  <button class="button ghost" id="addFolder">添加文件夹</button>
+                  <button class="button ghost" id="clearFiles">清空列表</button>
+                </div>
+                <div class="queue-table-head"><span>ID</span><span>文件名</span><span>文件路径</span><span>状态</span></div>
+                <div class="source-list" id="sourceList"></div>
+                <div class="queue-summary"><span>视频数：<b id="sourceCount">0</b></span><span>已就绪：<b id="readyCount">0</b></span><span>本地队列</span></div>
+              </section>
+
+              <button class="button ghost full library-pick-button" id="pickBrollLibrary">从星标库手动选择混剪素材</button>
+
+              <section class="initial-hook-panel" id="initialHookPanel" data-intake-kind="hook">
+                <div class="initial-hook-head"><div><span class="section-kicker">同时准备</span><h3>钩子素材</h3><p>现在就导入；开始后会与空镜拆分并行识别，不再进入第二步才等待。</p></div><button class="button ghost" id="pickInitialHooks">＋ 添加钩子视频</button></div>
+                <div class="initial-hook-list" id="initialHookList"><div class="initial-hook-empty">钩子可稍后补充，但建议在这里一次导入。</div></div>
+                <div class="queue-summary"><span>钩子数：<b id="initialHookCount">0</b></span><span>视觉与叙事判断</span><span>低置信度才人工复核</span></div>
+                <button class="button ghost full library-pick-button" id="pickHookLibrary">从星标库手动选择历史钩子</button>
+              </section>
+
+              <section class="initial-hook-panel music-intake hidden" id="initialMusicPanel">
+                <div class="initial-hook-head"><div><span class="section-kicker">独立音轨</span><h3>音乐</h3><p>第三步自动选择，仍可拖动入点调整使用区间。</p></div><button class="button ghost" id="pickInitialMusic">＋ 添加音乐</button></div>
+                <div class="initial-hook-list" id="initialMusicList"><div class="initial-hook-empty">尚未添加音乐。</div></div>
+                <div class="queue-summary"><span>音乐数：<b id="initialMusicCount">0</b></span><span>后段独立使用</span><span>不受钩子长度限制</span></div>
+              </section>
+            </div>
+
+            <aside class="feature-column">
+              <section class="engine-card">
+                <span class="pulse-dot"></span><div><b id="engineTitle">本地 CPU 已就绪</b><small id="engineHint">FFmpeg 负责镜头检测，视觉模型负责理解画面</small></div><button id="engineSettings">设置</button>
+              </section>
+              <section class="settings-panel process-dock" id="settingsPanel">
+                <label class="dock-setting wide"><span>镜头连贯度</span><div><input type="range" id="threshold" min="0.10" max="0.55" step="0.01" value="0.30"><output id="thresholdOutput">连贯 · 0.30</output></div></label>
+                <label class="dock-setting"><span>最短连续段</span><div class="dock-input"><input id="minDuration" type="number" min="0" max="60" step="0.05" value="0.45"><i>秒</i></div><small>保留设计转场与连续动作</small></label>
+                <label class="dock-setting"><span>初始标签</span><div class="segmented"><button class="active">自动编号</button><button id="aiPreset">视觉识别</button></div><small id="labelModeHint">分析后可批量生成</small></label>
+                <label class="dock-setting"><span>切分边界</span><div class="dock-static">原始帧 PTS</div><small>半开区间，不丢帧</small></label>
+                <label class="dock-setting"><span>混剪段时长</span><div class="dock-input"><input id="mixSegmentDuration" type="number" min="1" max="180" step="0.5" value="15"><i>秒</i></div><small>钩子后段或纯混剪时长</small></label>
+                <label class="dock-setting" id="outputCountSetting"><span>成片数量</span><div class="dock-input"><input id="mixOutputCount" type="number" min="1" max="50" step="1" value="1"><i>条</i></div><small>纯混剪项目可批量生成</small></label>
+                <button class="analyze-button" id="analyzeButton" disabled><span>开始自动工作流</span><small>先同时导入空镜和钩子</small><b>→</b></button>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section class="analysis-loading hidden" id="analysisLoading">
+          <div class="scanner"><div class="scanner-line"></div><span>◫</span></div>
+          <h2>自动工作流正在并行处理</h2>
+          <p id="loadingText">空镜拆分与钩子识别同时开始，只等待这一轮。</p>
+          <div class="parallel-jobs">
+            <div><i></i><span><b>空镜拆分</b><small id="brollJobStatus">等待解码</small></span></div>
+            <div><i></i><span><b>钩子识别</b><small id="hookJobStatus">等待视觉模型</small></span></div>
+            <div><i></i><span><b>自动组合</b><small id="composeJobStatus">等待前两项结果</small></span></div>
+          </div>
+          <div class="workflow-progress"><i id="workflowProgressBar"></i></div>
+          <div class="workflow-progress-meta"><b id="workflowPercent">0%</b><small id="workflowProgressDetail">正在准备任务…</small></div>
+          <small>确定的结果会自动进入组合；不确定的钩子会集中标记，稍后再人工确认。</small>
+        </section>
+
+        <section class="results-layout hidden" id="resultsLayout">
+          <div class="results-main">
+            <div class="results-toolbar">
+              <div>
+                <span class="section-kicker">分析完成</span>
+                <h2><span id="segmentCount">0</span> 个镜头 <small id="selectedSummary">已全部选择</small></h2>
+              </div>
+              <div class="toolbar-actions">
+                <button class="button ghost small" id="selectAll">全选</button>
+                <button class="button ghost small" id="boxSelectSegments">框选入库</button>
+                <button class="button magic small hidden" id="starBoxSelection">★ 批量入库 <span>0</span></button>
+                <button class="button ghost small hidden" id="clearBoxSelection">取消框选</button>
+                <button class="button ghost small" id="batchLabel">批量命名</button>
+                <button class="button magic small" id="aiLabel">智能标签</button>
+                <button class="button magic small hidden" id="scriptMix">⌁ 脚本混剪</button>
+                <button class="button primary small" id="hookStudio">下一步：确认钩子 →</button>
+                <button class="button ghost small" id="downloadCsv">导出 CSV</button>
+              </div>
+            </div>
+            <div class="filter-row">
+              <label class="search-box"><span>⌕</span><input id="segmentSearch" placeholder="搜索标签或源文件"></label>
+              <div class="view-toggle"><button class="active" data-view="grid">▦</button><button data-view="list">☷</button></div>
+            </div>
+            <div class="segment-grid" id="segmentGrid"></div>
+          </div>
+
+          <aside class="inspector">
+            <div class="preview-wrap">
+              <video id="previewVideo" controls preload="metadata"></video>
+              <div class="preview-empty" id="previewEmpty"><span>▶</span><p>选择镜头进行预览</p></div>
+            </div>
+            <div class="inspector-body">
+              <span class="section-kicker">当前镜头</span>
+              <h3 id="activeLabel">尚未选择</h3>
+              <div class="timecode" id="activeTime">00:00.000 — 00:00.000</div>
+              <div class="meta-grid">
+                <div><small>时长</small><b id="activeDuration">—</b></div>
+                <div><small>源文件</small><b id="activeSource">—</b></div>
+              </div>
+              <label class="label-editor"><span>片段标签</span><input id="labelInput" disabled placeholder="选择一个镜头"></label>
+              <div class="boundary-editor">
+                <div class="boundary-head"><span>逐帧修正边界</span><small id="frameDuration">—</small></div>
+                <div class="boundary-row"><b>入点</b><button data-nudge="start:-1">−1 帧</button><input id="startInput" type="number" step="0.001" disabled><button data-nudge="start:1">＋1 帧</button></div>
+                <div class="boundary-row"><b>出点</b><button data-nudge="end:-1">−1 帧</button><input id="endInput" type="number" step="0.001" disabled><button data-nudge="end:1">＋1 帧</button></div>
+                <button class="button secondary full" id="saveBoundary" disabled>保存入点 / 出点</button>
+              </div>
+              <div class="ai-tag-list" id="activeAiTags"></div>
+              <button class="button secondary full" id="saveLabel" disabled>保存标签</button>
+            </div>
+            <div class="export-box">
+              <div class="export-title"><span>导出设置</span><b id="exportCount">0 段</b></div>
+            <label><span>输出文件夹</span><div class="folder-field"><input id="outputDir" placeholder="默认：源文件旁 HoMix导出"><button id="pickOutput">选择</button></div></label>
+              <div class="export-mode">
+                <button class="active" data-mode="accurate"><b>安全精确切割</b><small>逐帧重编码 · 避免花屏与跳帧</small></button>
+              </div>
+              <button class="button primary full export-button" id="exportButton">导出选中镜头 <span>→</span></button>
+              <p class="export-status" id="exportStatus">所有片段均安全精确重编码；损坏帧会被阻止，单段失败不会中断整批。</p>
+              <button class="button ghost full hidden" id="openLastExport">打开导出文件夹</button>
+            </div>
+          </aside>
+        </section>
+
+        <section class="pipeline-page hidden" id="hookExtractStage">
+          <div class="pipeline-page-head">
+            <div><span class="section-kicker">步骤 2 · 自动分流</span><h2>钩子识别与切点确认</h2><p>模型先判断钩子结束位置；钩子原声只跟随保留的钩子画面。</p></div>
+            <button class="button ghost" data-workflow-page="scene">← 查看空镜库</button>
+          </div>
+          <div class="hook-review-layout" id="hookWorkbench">
+            <div class="hook-review-main">
+              <section class="hook-preview-panel">
+                <video id="hookPreview" controls preload="auto"></video>
+                <div class="hook-cut-control">
+                  <div><span>钩子画面结束</span><b id="hookCutLabel">00:00.000</b></div>
+                  <input id="hookCut" type="range" min="0" max="1" step="0.001" value="0">
+                  <div class="hook-candidates" id="hookCandidates"></div>
+                  <small>点击候选点会立即保存；拖动滑杆松手后也会自动保存，无需再找保存按钮。</small>
+                </div>
+              </section>
+              <section class="hook-extract-result">
+                <div class="hook-result-head"><span class="section-kicker">审核操作</span><em id="hookAutoSaveState">等待选择钩子</em></div>
+                <button class="button magic full" id="starCurrentHook">☆ 将确认后的钩子加入星标库</button>
+                <button class="button primary full" id="continueToCompose">已检查，下一条 →</button>
+              </section>
+            </div>
+            <aside class="hook-review-sidebar">
+              <div class="hook-review-sidebar-head"><div><span class="section-kicker">审核队列</span><h3>逐条检查钩子</h3></div><b id="hookReviewProgress">0 / 0</b></div>
+              <div class="automation-summary">
+                <div><span>✓</span><b id="autoHookCount">0</b><small>AI 已标注</small></div>
+                <div class="review"><span>!</span><b id="reviewHookCount">0</b><small>待人工检查</small></div>
+                <div><span>▰</span><b id="failedHookCount">0</b><small>处理失败</small></div>
+              </div>
+              <div class="hook-batch-results" id="hookBatchResults"></div>
+              <div class="hook-intake">
+                <div><b id="hookName">尚未选择钩子视频</b><small id="hookMeta">可继续批量补充，已有结果不会重复识别</small></div>
+                <button class="button ghost" id="pickHook">继续添加钩子</button>
+                <button class="button secondary" id="analyzeHook" disabled>加入队列处理</button>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="pipeline-page hidden" id="hookComposeStage">
+          <div class="pipeline-page-head">
+            <div><span class="section-kicker">步骤 3 · 编排与检验</span><h2>成片编排与导出</h2><p id="confirmedHookSummary">画面与音乐可分别调整</p></div>
+            <button class="button ghost" id="backToExtract">← 返回钩子核验</button>
+          </div>
+          <div class="compose-review-layout">
+            <div class="compose-review-main">
+              <section class="composition-review">
+                <div class="composition-player">
+                  <video id="compositionPreview" controls preload="metadata"></video>
+                  <div class="composition-preview-empty" id="compositionPreviewEmpty"><span>▶</span><b>正在准备当前钩子的整条预览</b><small>只渲染当前打开的一条，避免一次占满电脑</small></div>
+                </div>
+              </section>
+              <section class="hook-timeline-panel">
+                <div class="timeline-toolbar"><div><b>成片时间线</b><small id="timelineCoverage">按目标时长铺设画面</small></div><div class="timeline-toolbar-actions"><button class="button ghost small" id="openClipPicker">＋ 添加素材</button><button class="button ghost small" id="addSelectedToTimeline">重新自动铺满</button></div></div>
+                <div class="composition-basics">
+                  <div class="composition-duration-field"><span>混剪时长</span><input id="compositionMixDuration" type="number" min="1" max="180" step="0.5" value="15"><b>秒</b></div>
+                  <div class="duration-presets" aria-label="混剪时长快选"><button type="button" data-duration-preset="10">10s</button><button type="button" data-duration-preset="15">15s</button><button type="button" data-duration-preset="20">20s</button></div>
+                  <label class="music-fade-toggle"><input id="compositionMusicFade" type="checkbox" checked><span>结尾音乐渐弱 0.5s</span></label>
+                  <span class="composition-auto-save" id="compositionAutoSave">修改会自动保存并锁定</span>
+                </div>
+                <div class="video-track" id="hookTimeline"></div>
+                <section class="music-track-editor" id="musicTrackEditor">
+                  <div class="music-waveform-head"><div><b>音乐波形</b><small>拖动选择音乐；灰色区间单击查看提示，双击可重新启用</small></div><strong id="musicWaveformSelection">00:00 → 00:15</strong></div>
+                  <div class="music-waveform" id="musicWaveform" role="slider" tabindex="0" aria-label="音乐选用区间"><canvas id="musicWaveformCanvas"></canvas><div class="music-reuse-ranges" id="musicReuseRanges"></div><span id="musicWaveformLoading">正在分析波形…</span></div>
+                  <div class="music-controls"><select id="compositionMusic"></select><label><span>音乐入点</span><input id="compositionMusicStart" type="range" min="0" max="0" step="0.1" value="0"><b id="compositionMusicStartLabel">00:00</b></label><audio id="compositionMusicPreview" controls preload="metadata"></audio></div>
+                </section>
+          <p class="dialog-note">拖动画面调整顺序；“换”可替换当前位置，“添加素材”可一次加入多条。关闭钩子后将从 0 秒开始输出纯混剪。</p>
+              </section>
+            </div>
+            <aside class="compose-review-sidebar">
+              <section class="composition-inspector">
+                <span class="section-kicker">当前检查</span>
+                <h3 id="compositionClipName">尚未选择片段</h3>
+                <p id="compositionClipMeta">时间线会显示缩略图、来源、入点和实际使用时长。</p>
+                <button class="button ghost full" id="renderCompositionPreview">重新生成当前预览</button>
+                <small id="compositionPreviewStatus">打开钩子后会自动生成预览；修改顺序或转场后可手动更新。</small>
+              </section>
+              <section class="compose-hook-navigator">
+                <div class="compose-hook-nav-head"><div><span class="section-kicker">组合队列</span><b>逐条向下检查，切换自动保存</b></div><span id="composeHookProgress">0 / 0</span></div>
+                <div class="compose-hook-queue" id="composeHookQueue"></div>
+                <div class="compose-hook-nav-actions"><button class="button ghost small" id="previousComposeHook">↑ 上一条</button><button class="button ghost small" id="nextComposeHook">下一条 ↓</button></div>
+              </section>
+            </aside>
+          </div>
+          <div class="hook-export-row">
+            <label><span>输出文件夹</span><input id="hookOutputDir" placeholder="默认：钩子视频旁 HoMix钩子成片"></label>
+            <button class="button primary" id="batchExportHooks">整体导出全部成片</button>
+          </div>
+          <section class="batch-export-progress hidden" id="hookExportProgress" aria-live="polite">
+            <div class="batch-export-progress-head"><div><b id="hookExportProgressTitle">准备导出</b><small id="hookExportProgressCount">0 / 0</small></div><strong id="hookExportProgressPercent">0%</strong></div>
+            <progress id="hookExportProgressBar" max="100" value="0">0%</progress>
+            <div class="batch-export-progress-meta"><span id="hookExportProgressCurrent">正在建立导出任务…</span><span id="hookExportProgressStats">成功 0 · 失败 0</span></div>
+          </section>
+          <p class="export-status" id="hookExportStatus">所有调整都会自动保存并锁定；系统会依次渲染全部成片并列出每条结果。</p>
+          <section class="hook-export-results hidden" id="hookExportResults"><div class="hook-export-results-head"><div><span>✓</span><b id="hookExportResultTitle">导出完成</b></div><button class="button ghost small" id="openHookExportFolder">打开导出文件夹</button></div><div id="hookExportResultList"></div></section>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="drawer-backdrop hidden" id="drawerBackdrop"></div>
+  <aside class="project-drawer hidden" id="projectDrawer">
+    <div class="drawer-head"><div><span class="section-kicker">本机保存</span><h2>项目记录</h2></div><button id="closeDrawer">×</button></div>
+    <div class="drawer-list" id="projectList"></div>
+  </aside>
+
+  <dialog id="helpDialog">
+    <button class="dialog-close" onclick="this.closest('dialog').close()">×</button>
+    <span class="section-kicker">快速上手</span><h2>三步完成钩子成片</h2>
+    <ol><li><b>一次导入两类素材</b><span>开始前同时添加空镜和钩子；连贯拆分与钩子识别会并行运行。</span></li><li><b>只处理不确定项</b><span>高置信度钩子自动通过，低置信度和识别失败项集中等待人工确认。</span></li><li><b>自动组合并检验</b><span>全库自动铺满、默认硬切；点击时间线逐段检查，或生成整条低清预览后导出。</span></li></ol>
+    <p class="dialog-note">项目与缩略图保存在当前用户的 HoMix 本地数据目录，原始视频不会被复制或删除。</p>
+  </dialog>
+
+  <dialog id="aiDialog" class="settings-dialog">
+    <button class="dialog-close" onclick="this.closest('dialog').close()">×</button>
+    <span class="section-kicker">视觉模型</span><h2>AI 标签设置</h2>
+    <label><span>模型来源</span><select id="aiProvider"><option value="glm">GLM 云端视觉模型</option><option value="ollama">Ollama 本地视觉模型</option></select></label>
+    <label id="ollamaModelRow"><span>Ollama 视觉模型</span><select id="ollamaModel"><option value="">尚未安装模型</option></select></label>
+    <section class="ollama-setup" id="ollamaSetup">
+      <div><b id="ollamaSetupState">正在检测 Ollama…</b><small id="ollamaSetupHint">HoMix 启动时会自动联动本机 Ollama。</small></div>
+      <button class="button ghost small" id="startOllama" type="button">启动/重新检测</button>
+      <input id="ollamaInstallModel" value="qwen3-vl:4b" aria-label="要安装的 Ollama 视觉模型">
+      <button class="button ghost small" id="pullOllamaModel" type="button">安装视觉模型</button>
+    </section>
+    <label id="glmModelRow"><span>GLM 模型</span><input id="glmModel" value="glm-4.6v-flash" autocomplete="off"></label>
+    <label id="glmKeyRow"><span>GLM API Key</span><input id="glmApiKey" type="password" placeholder="仅在本次运行内存中保存" autocomplete="off"></label>
+    <p class="dialog-note">Ollama 无需 API Key：HoMix 会自动启动本地服务，并只列出具备 vision 能力的模型。首次安装模型需要联网下载。GLM Key 使用当前用户的系统安全存储加密保存。</p>
+    <button class="button primary full" id="saveAiSettings">保存并启用</button>
+  </dialog>
+
+  <dialog id="mixDialog" class="mix-dialog">
+    <button class="dialog-close" onclick="this.closest('dialog').close()">×</button>
+    <span class="section-kicker">Narrative Mix</span><h2 id="mixContextTitle">脚本文案混剪</h2>
+    <label class="mix-script-field"><span>粘贴文案</span><textarea id="mixScript" placeholder="例如：从一颗电芯开始，我们让清洁能源抵达更远的地方……"></textarea></label>
+    <div class="mix-options">
+      <label><span>匹配方式</span><select id="mixMode"><option value="story">整篇故事</option><option value="lines">逐行批量</option></select></label>
+      <label><span>目标时长</span><div class="dock-input"><input id="mixDuration" type="number" min="5" max="180" value="15"><i>秒</i></div></label>
+      <label><span>镜头数量</span><div class="dock-input"><input id="mixShotCount" type="number" min="2" max="20" value="10"><i>个</i></div></label>
+      <div class="mix-logic"><b>叙事逻辑</b><small>建立环境 → 推进信息 → 细节高潮 → 结尾收束</small></div>
+    </div>
+    <label class="mix-library-option hidden"><input type="checkbox" id="includeLibrary"><span>星标库内容必须先手动加入当前项目</span></label>
+    <p class="dialog-note mix-mode-hint" id="mixModeHint">只使用已完成视觉理解的候选镜头；片头只在首位，片尾只在末位，并跨方案避免重复。</p>
+    <button class="button ghost full" id="labelMixCandidates">批量理解全部未标注镜头</button>
+    <button class="button primary full" id="generateMix">生成混剪方案</button>
+    <section class="mix-result hidden" id="mixResult">
+      <div class="mix-result-head"><div><span class="section-kicker">方案预览</span><h3 id="mixSummary">10 个镜头 · 15 秒 · 语义覆盖 0/10</h3></div><button class="button ghost small" id="applyMixSelection">应用到镜头选择</button></div>
+      <div class="mix-shot-list" id="mixShotList"></div>
+      <button class="button primary full" id="exportMix">导出单文件画面粗剪</button>
+      <p class="dialog-note">当前粗剪输出为无音频画面版，便于先确认镜头匹配、故事顺序和切点。</p>
+    </section>
+  </dialog>
+
+  <dialog id="libraryDialog" class="library-dialog">
+    <button class="dialog-close" onclick="this.closest('dialog').close()">×</button>
+    <span class="section-kicker">Local Selects</span><h2>星标素材库</h2>
+    <div class="library-toolbar"><p><b id="libraryDialogCount">0</b> 个星标内容 · 仅在手动选择后参与项目</p><div><button class="button ghost small" id="openLibraryFolder">打开素材库文件夹</button></div></div>
+    <div class="library-type-tabs"><button class="active" data-library-type="broll">混剪素材</button><button data-library-type="hook">钩子</button><span id="librarySelectionSummary"></span><button class="button primary small hidden" id="applyLibrarySelection">加入当前项目</button></div>
+    <video class="library-preview hidden" id="libraryPreview" controls></video>
+    <div class="library-grid" id="libraryGrid"></div>
+  </dialog>
+
+  <dialog id="clipPickerDialog" class="clip-picker-dialog">
+    <div class="clip-picker-head"><div><span class="section-kicker">素材选择</span><h2 id="clipPickerTitle">批量添加素材</h2><p id="clipPickerHint">选择多条素材后一次加入时间线；灰色片段单击提示，双击可重新启用。</p></div><button class="dialog-close" id="closeClipPicker" title="关闭">×</button></div>
+    <div class="clip-picker-source-tabs" role="tablist" aria-label="素材来源">
+      <button class="active" type="button" role="tab" aria-selected="true" data-clip-source="project">本次项目 <span id="projectClipPickerCount">0</span></button>
+      <button type="button" role="tab" aria-selected="false" data-clip-source="library">星标素材库 <span id="libraryClipPickerCount">0</span></button>
+    </div>
+    <div class="clip-picker-body">
+      <section class="clip-picker-preview"><video id="clipPickerPreview" controls preload="metadata"></video><div><b id="clipPickerPreviewName">选择素材查看画面</b><small id="clipPickerPreviewMeta">点击下方素材即可预览并加入选择。</small></div></section>
+      <div class="clip-picker-grid" id="clipPickerGrid"></div>
+    </div>
+    <div class="clip-picker-footer"><span id="clipPickerSelectionCount">已选 0 条</span><button class="button ghost" id="clearClipPickerSelection">清空选择</button><button class="button primary" id="applyClipPickerSelection" disabled>添加选中素材</button></div>
+  </dialog>
+
+  <dialog id="shortDurationDialog" class="short-duration-dialog">
+    <span class="section-kicker">导出确认</span>
+    <h2>部分成片时长不足</h2>
+    <p>以下成片无法达到设定时长。继续后将按实际可用画面导出，音乐会同步缩短到真实结尾。</p>
+    <div class="short-duration-list" id="shortDurationList"></div>
+    <div class="short-duration-actions"><button class="button ghost" id="cancelShortDurationExport">返回调整</button><button class="button primary" id="confirmShortDurationExport">仍然导出</button></div>
+  </dialog>
+
+  <div class="toast" id="toast"></div>
+  <script src="/app.js?v=0.20.5"></script>
+</body>
+</html>
